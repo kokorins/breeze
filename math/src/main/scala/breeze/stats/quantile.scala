@@ -7,8 +7,7 @@ import breeze.macros.expand
 
 object quantile extends UFunc {
   @expand
-  implicit def canTraverseValuesImpl[T, @expand.args(Int, Double, Float, Long) S]
-  (implicit iter: CanTraverseValues[T, S]): Impl[T, Quantile[S]] = new Impl[T, Quantile[S]] {
+  implicit def canTraverseValuesImpl[T, @expand.args(Int, Double, Float, Long) S](implicit iter: CanTraverseValues[T, S]): Impl[T, Quantile[S]] = new Impl[T, Quantile[S]] {
 
     def apply(v: T): Quantile[S] = {
       val visitor = new ValuesVisitor[S] {

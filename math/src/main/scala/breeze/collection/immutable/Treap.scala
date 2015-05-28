@@ -23,7 +23,7 @@ import scala.collection._
  *
  * See: http://www.cs.cmu.edu/afs/cs.cmu.edu/project/scandal/public/papers/treaps-spaa98.pdf
  */
-class Treap[A, B <: AnyRef](val root: TreapNode[A, B])(implicit ordering: A => Ordered[A])
+class Treap[A, B <: AnyRef](val root: TreapNode[A, B])(override implicit val ordering: Ordering[A])
   extends TreapBase[A, B] with immutable.SortedMap[A, B] {
   def this() = this(TreapEmptyNode[A, B]())
 
@@ -83,7 +83,7 @@ class Treap[A, B <: AnyRef](val root: TreapNode[A, B])(implicit ordering: A => O
 
   override def lastKey: A = root.lastKey(this)
 
-  override def compare(k0: A, k1: A): Int = k0.compare(k1)
+  override def compare(k0: A, k1: A): Int = ordering.compare(k0,k1)
 
   override def toString() = root.toString
 
@@ -98,13 +98,17 @@ class Treap[A, B <: AnyRef](val root: TreapNode[A, B])(implicit ordering: A => O
     ((h << 16) & 0xffff0000) | ((h >> 16) & 0x0000ffff)
   }
 
+  override def iterator: scala.Iterator[(A, B)] = root.elements(this)
+
+
   override def valuesIteratorFrom(start: A): scala.Iterator[B] = ???
 
-  override def iteratorFrom(start: A): scala.Iterator[(A, B)] = ???
+  override def iteratorFrom(start: A): scala.Iterator[(A, B)] = {
+    val triple = root.split(this, start)
+    triple._3.(triple._2, triple._3).elements(this)
+  }
 
   override def keysIteratorFrom(start: A): scala.Iterator[A] = ???
-
-  override def iterator: scala.Iterator[(A, B)] = root.elements(this)
 }
 
 // ---------------------------------------------------------
