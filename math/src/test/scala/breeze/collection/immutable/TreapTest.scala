@@ -5,7 +5,6 @@ import org.scalatest._
 import org.scalatest.junit._
 import org.scalatest.prop._
 import org.junit.runner.RunWith
-import scala.math._
 
 import scala.util.Random
 
@@ -21,4 +20,5 @@ class TreapTest extends FunSuite with Checkers {
       }
     })
   }
+
 }

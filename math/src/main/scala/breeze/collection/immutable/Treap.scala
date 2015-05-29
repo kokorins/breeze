@@ -33,15 +33,11 @@ class Treap[A, B](val root: TreapNode[A, B])(implicit override val ordering:Orde
   }
 
   def union(that: Treap[A, B]): Treap[A, B] = union(that.root)
-
   def intersect(that: Treap[A, B]): Treap[A, B] = intersect(that.root)
-
   def diff(that: Treap[A, B]): Treap[A, B] = diff(that.root)
 
   def union(that: TreapNode[A, B]): Treap[A, B] = Treap(root.union(this, that))
-
   def intersect(that: TreapNode[A, B]): Treap[A, B] = Treap(root.intersect(this, that))
-
   def diff(that: TreapNode[A, B]): Treap[A, B] = Treap(root.diff(this, that))
 
   lazy val count = root.count(this) // TODO: Revisit treap size/count.
@@ -83,7 +79,7 @@ class Treap[A, B](val root: TreapNode[A, B])(implicit override val ordering:Orde
    * nodes to the top of the heap for faster access.
    */
   def priority(node: TreapFullNode[A, B]): Int = {
-    val h = node.key.hashCode
+    val h = node.value(this).hashCode
     ((h << 16) & 0xffff0000) | ((h >> 16) & 0x0000ffff)
   }
 
@@ -206,8 +202,6 @@ case class TreapEmptyNode[A, B]()(implicit ordering: Ordering[A]) extends TreapN
 
   override def toString = "_"
 }
-
-// ---------------------------------------------------------
 
 abstract class TreapFullNode[A, B]()(implicit ordering: Ordering[A]) extends TreapNode[A, B] {
   def key: A
