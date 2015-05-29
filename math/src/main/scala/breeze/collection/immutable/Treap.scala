@@ -23,20 +23,13 @@ import scala.collection._
  *
  * See: http://www.cs.cmu.edu/afs/cs.cmu.edu/project/scandal/public/papers/treaps-spaa98.pdf
  */
-class Treap[A, B <: AnyRef](val root: TreapNode[A, B])(override implicit val ordering: Ordering[A])
-  extends TreapBase[A, B] with immutable.SortedMap[A, B] {
-  def this() = this(TreapEmptyNode[A, B]())
+class Treap[A, B](val root: TreapNode[A, B])(implicit override val ordering:Ordering[A])
+      extends TreapBase[A, B] with immutable.SortedMap[A, B] {
 
-  def mkTreap(r: TreapNode[A, B]): Treap[A, B] = new Treap(r)
+  def mkLeaf(k: A, v: B): TreapNode[A, B] = TreapMemNode(k, v, TreapEmptyNode[A, B]()(ordering), TreapEmptyNode[A, B]()(ordering))(ordering)
 
-  def mkLeaf(k: A, v: B): TreapNode[A, B] =
-    TreapMemNode(k, v, TreapEmptyNode[A, B](), TreapEmptyNode[A, B]())
-
-  def mkNode(basis: TreapFullNode[A, B],
-             left: TreapNode[A, B],
-             right: TreapNode[A, B]): TreapNode[A, B] = basis match {
-    case TreapMemNode(k, v, _, _) =>
-      TreapMemNode(k, v, left, right)
+  def mkNode(basis: TreapFullNode[A, B], left: TreapNode[A, B], right: TreapNode[A, B]): TreapNode[A, B] = basis match {
+    case TreapMemNode(k, v, _, _) => TreapMemNode(k, v, left, right)
   }
 
   def union(that: Treap[A, B]): Treap[A, B] = union(that.root)
@@ -45,11 +38,11 @@ class Treap[A, B <: AnyRef](val root: TreapNode[A, B])(override implicit val ord
 
   def diff(that: Treap[A, B]): Treap[A, B] = diff(that.root)
 
-  def union(that: TreapNode[A, B]): Treap[A, B] = mkTreap(root.union(this, that))
+  def union(that: TreapNode[A, B]): Treap[A, B] = Treap(root.union(this, that))
 
-  def intersect(that: TreapNode[A, B]): Treap[A, B] = mkTreap(root.intersect(this, that))
+  def intersect(that: TreapNode[A, B]): Treap[A, B] = Treap(root.intersect(this, that))
 
-  def diff(that: TreapNode[A, B]): Treap[A, B] = mkTreap(root.diff(this, that))
+  def diff(that: TreapNode[A, B]): Treap[A, B] = Treap(root.diff(this, that))
 
   lazy val count = root.count(this) // TODO: Revisit treap size/count.
 
@@ -57,27 +50,23 @@ class Treap[A, B <: AnyRef](val root: TreapNode[A, B])(override implicit val ord
 
   override def get(key: A): Option[B] =
     root.lookup(this, key) match {
-      case n: TreapFullNode[A, B] => Some(n.value(this))
+      case node: TreapFullNode[A, B] => Some(node.value(this))
       case _ => None
     }
 
-  override def rangeImpl(from: Option[A], until: Option[A]): immutable.SortedMap[A, B] =
-    mkTreap(root.range(this, from, until))
+  override def rangeImpl(from: Option[A], until: Option[A]): immutable.SortedMap[A, B] = Treap(root.range(this, from, until))
 
-  def update[B1 >: B](key: A, value: B1): immutable.SortedMap[A, B1] =
-    value match {
-      case v: B => upd(key, v)
-      case _ => throw new RuntimeException("TODO: wrong treap update type")
-    }
+//  def update[B1 >: B](key: A, value: B1): immutable.SortedMap[A, B1] =
+//    value match {
+//      case v: B => upd(key, v)
+//      case _ => throw new RuntimeException("TODO: wrong treap update type")
+//    }
 
-  def upd(key: A, value: B): Treap[A, B] =
-    union(mkLeaf(key, value))
+  def upd(key: A, value: B): Treap[A, B] = union(mkLeaf(key, value))
 
-  override def -(key: A): immutable.SortedMap[A, B] =
-    del(key)
+  override def -(key: A): immutable.SortedMap[A, B] =  del(key)
 
-  def del(key: A): Treap[A, B] =
-    mkTreap(root.del(this, key))
+  def del(key: A): Treap[A, B] = Treap(root.del(this, key))
 
   override def firstKey: A = root.firstKey(this)
 
@@ -101,19 +90,24 @@ class Treap[A, B <: AnyRef](val root: TreapNode[A, B])(override implicit val ord
   override def iterator: scala.Iterator[(A, B)] = root.elements(this)
 
 
-  override def valuesIteratorFrom(start: A): scala.Iterator[B] = ???
+  override def valuesIteratorFrom(start: A): scala.Iterator[B] = iteratorFrom(start) map (p=>p._2)
 
   override def iteratorFrom(start: A): scala.Iterator[(A, B)] = {
-    val triple = root.split(this, start)
-    triple._3.(triple._2, triple._3).elements(this)
+    val (low, x, high) = root.split(this, start)
+    Treap(high.union(Treap(high), x)).iterator
   }
 
-  override def keysIteratorFrom(start: A): scala.Iterator[A] = ???
+  override def keysIteratorFrom(start: A): scala.Iterator[A] = iteratorFrom(start) map (p=>p._1)
+}
+
+object Treap {
+  def apply[A, B](r: TreapNode[A, B])(implicit ordering: Ordering[A]) = new Treap[A,B](r)(ordering)
+  def apply[A, B]()(implicit ordering: Ordering[A]) = new Treap(TreapEmptyNode[A, B]()(ordering))
 }
 
 // ---------------------------------------------------------
 
-abstract class TreapBase[A, B <: AnyRef]() {
+abstract class TreapBase[A, B]() {
   def mkLeaf(k: A, v: B): TreapNode[A, B]
 
   def mkNode(basis: TreapFullNode[A, B],
@@ -127,22 +121,17 @@ abstract class TreapBase[A, B <: AnyRef]() {
 
 // ---------------------------------------------------------
 
-abstract class TreapNode[A, B <: AnyRef]() {
+abstract class TreapNode[A, B]()(implicit cmp: Ordering[A]) {
   type T = TreapBase[A, B]
   type Node = TreapNode[A, B]
   type Full = TreapFullNode[A, B]
   type Empty = TreapEmptyNode[A, B]
 
   def isEmpty: Boolean
-
   def isLeaf(t: T): Boolean
-
   def count(t: T): Long
-
   def firstKey(t: T): A
-
   def lastKey(t: T): A
-
   def lookup(t: T, s: A): Node
 
   /**
@@ -186,7 +175,7 @@ abstract class TreapNode[A, B <: AnyRef]() {
 
 // ---------------------------------------------------------
 
-case class TreapEmptyNode[A, B <: AnyRef]()(implicit order: A => Ordered[A]) extends TreapNode[A, B] {
+case class TreapEmptyNode[A, B]()(implicit ordering: Ordering[A]) extends TreapNode[A, B] {
   def isEmpty: Boolean = true
 
   def isLeaf(t: T): Boolean = throw new RuntimeException("isLeaf on empty treap node")
@@ -220,7 +209,7 @@ case class TreapEmptyNode[A, B <: AnyRef]()(implicit order: A => Ordered[A]) ext
 
 // ---------------------------------------------------------
 
-abstract class TreapFullNode[A, B <: AnyRef]() extends TreapNode[A, B] {
+abstract class TreapFullNode[A, B]()(implicit ordering: Ordering[A]) extends TreapNode[A, B] {
   def key: A
 
   def left(t: T): Node
@@ -370,11 +359,8 @@ abstract class TreapFullNode[A, B <: AnyRef]() extends TreapNode[A, B] {
 
 // ---------------------------------------------------------
 
-case class TreapMemNode[A, B <: AnyRef](key: A, v: B, nl: TreapNode[A, B], nr: TreapNode[A, B])(implicit order: A => Ordered[A])
-  extends TreapFullNode[A, B] {
+case class TreapMemNode[A, B](key: A, v: B, nl: TreapNode[A, B], nr: TreapNode[A, B])(implicit ordering: Ordering[A])  extends TreapFullNode[A, B] {
   def left(t: T) = nl
-
   def right(t: T) = nr
-
   def value(t: T) = v
 }
