@@ -14,14 +14,15 @@ class QuantileTree[S](precision: Double, val treap: CartesianTree[QuantileNode[S
     override def compare(x: QuantileNode[S], y: QuantileNode[S]): Int = Ordering[Long].compare(x.g+x.delta, y.g+y.delta)
   }
 
+  def this(precision:Double, minL:S, maxL:S)(implicit key:(QuantileNode[S]=>S), keyOrd: Ordering[S], priority:Ordering[QuantileNode[S]]) = this(precision, CartesianTree[QuantileNode[S], S](), minL, maxL)
+
   def quantile(x: Double): Try[S] = {
     val sz = treap.size
     val r = Math.round(x * sz)
     val l = precision * sz
     Try {
-      var it = CartesianIterator(treap.root)
-      var rmin = 0L
-      var rmax = 0L
+      var it = treap.min()
+      var (rmin, rmax) = (0L, 0L)
       var v: Option[S] = None
       while (it.isDefined) {
         it.fold() { i =>
@@ -61,7 +62,7 @@ class QuantileTree[S](precision: Double, val treap: CartesianTree[QuantileNode[S
           cur.fold() { c =>
             var g = c.node.fold(0L){(v,z)=>v.g+z}
             if (Band(c.node.v, eps) <= Band(n.node.v, eps) && g + n.node.v.g + n.node.v.delta < eps) {
-              var it = CartesianIterator(Some(c.node))
+              var it = CartesianIterator(Some(c.node, Nil))
               while(it.isDefined){
                 it.fold(){i=>
                   locTreap = locTreap.delete(i.node.v)
@@ -87,7 +88,3 @@ class QuantileTree[S](precision: Double, val treap: CartesianTree[QuantileNode[S
   }
 
 }
-
-//object QuantileTree {
-//  def apply[S](precision: Double)(implicit key:(QuantileNode[S]=>S), keyOrd:Ordering[S], priority:Ordering[QuantileNode[S]]) = new QuantileTree(precision, CartesianTree[QuantileNode[S], S], 0, 0)
-//}

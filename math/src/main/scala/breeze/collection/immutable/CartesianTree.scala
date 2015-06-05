@@ -1,5 +1,6 @@
 package breeze.collection.immutable
 
+// Ordered immutable multimap
 class CartesianTree[Value,Key](val root:Option[CartesianNode[Value, Key]])(implicit key:(Value=>Key), keyOrd:(Ordering[Key]), priority:Ordering[Value]) {
   type NonEmptyNode = CartesianNode[Value, Key]
   type Node = Option[CartesianNode[Value, Key]]
@@ -22,8 +23,8 @@ class CartesianTree[Value,Key](val root:Option[CartesianNode[Value, Key]])(impli
 }
 
 object CartesianTree {
-  def apply[Value, Key]()(implicit key:(Value=>Key), keyOrd:(Key=>Ordered[Key]), priority:Ordering[Value]) = new CartesianTree[Value, Key](None)
-  def apply[Value, Key](root: Option[CartesianNode[Value, Key]])(implicit key:(Value=>Key), keyOrd:(Key=>Ordered[Key]), priority:Ordering[Value]) = new CartesianTree[Value, Key](root)
+  def apply[Value, Key]()(implicit key:(Value=>Key), keyOrd:Ordering[Key], priority:Ordering[Value]) = new CartesianTree[Value, Key](None)
+  def apply[Value, Key](root: Option[CartesianNode[Value, Key]])(implicit key:(Value=>Key), keyOrd:Ordering[Key], priority:Ordering[Value]) = new CartesianTree[Value, Key](root)
 }
 
 class CartesianNode[Value, Key](val v:Value, val lhs:Option[CartesianNode[Value, Key]], val rhs:Option[CartesianNode[Value, Key]])(implicit key:(Value=>Key), keyOrd:(Key=>Ordered[Key]), priority:Ordering[Value]) {
@@ -48,9 +49,9 @@ class CartesianNode[Value, Key](val v:Value, val lhs:Option[CartesianNode[Value,
     }
     
   }
-  def predessesor(parents:List[NonEmptyNode] = Nil):Option[(NonEmptyNode, List[NonEmptyNode])] = lhs.fold(upUntil{(n, p)=> {p.rhs.fold(true){r=>r!=n}}}(parents)){l=>Some(l.max(this::parents))}
+  def predessesor(parents:List[NonEmptyNode] = Nil):Option[(NonEmptyNode, List[NonEmptyNode])] = lhs.fold(upUntil{(n, p)=> {p.lhs.fold(true){l=>l!=n}}}(parents)){l=>Some(l.max(this::parents))}
   
-  def successor(parents:List[NonEmptyNode] = Nil):Option[(NonEmptyNode, List[NonEmptyNode])] = rhs.fold(upUntil((n, p)=>{p.lhs.fold(true)(l=>l!=n)})(parents)) { r=> Some(r.min(this::parents))}
+  def successor(parents:List[NonEmptyNode] = Nil):Option[(NonEmptyNode, List[NonEmptyNode])] = rhs.fold(upUntil((n, p)=>{p.rhs.fold(true)(r=>r!=n)})(parents)) { r=> Some(r.min(this::parents))}
 
   def delete(v: Value): Node = {
     val (l, e, r) = split(key(v))
@@ -139,9 +140,9 @@ class CartesianIterator[V,K](val node: CartesianNode[V,K], parents:List[Cartesia
 }
 
 object CartesianIterator {
-  def apply[V,K](root:Option[CartesianNode[V,K]]):Option[CartesianIterator[V,K]] = {
-    root.fold[Option[CartesianIterator[V,K]]](None){n=>Some(new CartesianIterator(n.min()))}
-  }
+//  def apply[V,K](root:Option[CartesianNode[V,K]]):Option[CartesianIterator[V,K]] = {
+//    root.fold[Option[CartesianIterator[V,K]]](None){n=>Some(new CartesianIterator(n.min()))}
+//  }
   def apply[V,K](pair:Option[(CartesianNode[V,K],List[CartesianNode[V,K]])]) = {
     pair.fold[Option[CartesianIterator[V,K]]](None){p=>Some(new CartesianIterator(p))}
   }
