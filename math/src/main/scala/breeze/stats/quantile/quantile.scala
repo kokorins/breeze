@@ -1,7 +1,5 @@
 package breeze.stats.quantile
 
-import breeze.collection.immutable.CartesianTree
-
 import scala.util.Try
 
 object quantile {
@@ -13,8 +11,8 @@ object quantile {
 
   class QuantileSmImpl[S](values: List[S])(implicit ordering: Ordering[S]) extends Quantile[S] {
     def quant(x:Double):Try[S] = {
-      val idx = Math.round(x*(values.size-1)).toInt
-      Try(values.sorted.take(Math.round(x*values.size).toInt).head)
+      val idx = Math.floor(x*(values.size-1)).toInt
+      Try(values.sorted.drop(idx).head)
     }
     def add(x:S) = new QuantileSmImpl(x::values)
   }

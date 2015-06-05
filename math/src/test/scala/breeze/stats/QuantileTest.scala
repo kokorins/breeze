@@ -15,7 +15,7 @@ import scala.util.{Failure, Success}
 class quantileTest extends FunSuite with Checkers {
   test("Special case") {
     check( {
-      val xs = List[Double](5.069837965422152E307, 1.068866138925466E307, -2.6050746577833916E307)
+      val xs = List[Double](-8.213141730905142E307, -1.0)
       val qSm = new QuantileSmImpl[Double](xs)
       val q = xs.foldLeft(new QuantileImpl[Double](new QuantileTree(1e-3, 0.0, 0.0)({q:QuantileNode[Double]=>q.value},Ordering[Double], Ordering.by{q:QuantileNode[Double]=>q.g+q.delta}))){ (q, x)=>
         q.add(x)

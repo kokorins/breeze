@@ -43,7 +43,7 @@ class CartesianNode[Value, Key](val v:Value, val lhs:Option[CartesianNode[Value,
   private def upUntil(pred:(NonEmptyNode, NonEmptyNode)=>Boolean)(parents:List[NonEmptyNode] = Nil):Option[(NonEmptyNode, List[NonEmptyNode])] = parents match {
     case Nil => None
     case h :: t => if(pred(this, h)) {
-      Some((this,parents))
+      Some((h,t))
     } else {
       h.upUntil(pred)(t)
     }
