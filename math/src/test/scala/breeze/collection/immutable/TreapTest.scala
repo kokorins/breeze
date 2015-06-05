@@ -11,8 +11,7 @@ import scala.util.Random
 @RunWith(classOf[JUnitRunner])
 class TreapTest extends FunSuite with Checkers {
   test("Sorted distinct values") {
-    check(Prop.forAll {
-      xs:List[Int] => {
+    check(Prop.forAll {xs:List[Int] => {
         var t = Treap[Int, Double]()
         val distinct = xs.groupBy(x=>x).keySet.toList
         distinct foreach {x=> t = t.upd(x, Random.nextDouble())}

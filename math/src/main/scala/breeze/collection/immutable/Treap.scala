@@ -25,6 +25,39 @@ import scala.collection._
  */
 class Treap[A, B](val root: TreapNode[A, B])(implicit override val ordering:Ordering[A])
       extends TreapBase[A, B] with immutable.SortedMap[A, B] {
+  def delSubTree(node: TreapNode[A, B]): Treap[A, B] = {
+    if(node.isEmpty)
+      this
+    else {
+      Treap(root.delSubTree(this, node.asInstanceOf[node.Full].key))
+    }
+  }
+
+
+  def at(idx:Long, treapNode: TreapNode[A,B] = root):TreapNode[A,B] = {
+    if(idx==0) {
+      root
+    }
+    else {
+      val cnt = root.count(this)
+      if(cnt>=idx)
+        throw new Error("High index")
+      else {
+        root match {
+          case TreapEmptyNode() => throw new Error("High index")
+          case TreapMemNode(key, value, left, right) => {
+            val leftCount: Long = left.count(this)
+            if (leftCount > idx)
+              at(idx, left)
+            else if(leftCount == idx)
+              root
+            else
+              at(idx - leftCount, right)
+          }
+        }
+      }
+    }
+  }
 
   def mkLeaf(k: A, v: B): TreapNode[A, B] = TreapMemNode(k, v, TreapEmptyNode[A, B]()(ordering), TreapEmptyNode[A, B]()(ordering))(ordering)
 
@@ -52,12 +85,6 @@ class Treap[A, B](val root: TreapNode[A, B])(implicit override val ordering:Orde
 
   override def rangeImpl(from: Option[A], until: Option[A]): immutable.SortedMap[A, B] = Treap(root.range(this, from, until))
 
-//  def update[B1 >: B](key: A, value: B1): immutable.SortedMap[A, B1] =
-//    value match {
-//      case v: B => upd(key, v)
-//      case _ => throw new RuntimeException("TODO: wrong treap update type")
-//    }
-
   def upd(key: A, value: B): Treap[A, B] = union(mkLeaf(key, value))
 
   override def -(key: A): immutable.SortedMap[A, B] =  del(key)
@@ -79,7 +106,7 @@ class Treap[A, B](val root: TreapNode[A, B])(implicit override val ordering:Orde
    * nodes to the top of the heap for faster access.
    */
   def priority(node: TreapFullNode[A, B]): Int = {
-    val h = node.value(this).hashCode
+    val h = node.key.hashCode
     ((h << 16) & 0xffff0000) | ((h >> 16) & 0x0000ffff)
   }
 
@@ -98,7 +125,7 @@ class Treap[A, B](val root: TreapNode[A, B])(implicit override val ordering:Orde
 
 object Treap {
   def apply[A, B](r: TreapNode[A, B])(implicit ordering: Ordering[A]) = new Treap[A,B](r)(ordering)
-  def apply[A, B]()(implicit ordering: Ordering[A]) = new Treap(TreapEmptyNode[A, B]()(ordering))
+  def apply[A, B]()(implicit ordering: Ordering[A]) = new Treap[A,B](TreapEmptyNode[A, B]()(ordering))
 }
 
 // ---------------------------------------------------------
@@ -118,6 +145,7 @@ abstract class TreapBase[A, B]() {
 // ---------------------------------------------------------
 
 abstract class TreapNode[A, B]()(implicit cmp: Ordering[A]) {
+
   type T = TreapBase[A, B]
   type Node = TreapNode[A, B]
   type Full = TreapFullNode[A, B]
@@ -161,12 +189,10 @@ abstract class TreapNode[A, B]()(implicit cmp: Ordering[A]) {
    * Works like set-difference, as in "this" minus "that", or this - that.
    */
   def diff(t: T, that: Node): Node
-
   def elements(t: T): Iterator[(A, B)]
-
-  def range(t: T, from: Option[A], until: Option[A]): TreapNode[A, B]
-
-  def del(t: T, k: A): TreapNode[A, B]
+  def range(t: T, from: Option[A], until: Option[A]): Node
+  def del(t: T, k: A): Node
+  def delSubTree(t:T, k:A): Node
 }
 
 // ---------------------------------------------------------
@@ -201,6 +227,8 @@ case class TreapEmptyNode[A, B]()(implicit ordering: Ordering[A]) extends TreapN
   def del(t: T, k: A): TreapNode[A, B] = this
 
   override def toString = "_"
+
+  override def delSubTree(t: T, k: A): Node = this
 }
 
 abstract class TreapFullNode[A, B]()(implicit ordering: Ordering[A]) extends TreapNode[A, B] {
@@ -345,9 +373,20 @@ abstract class TreapFullNode[A, B]()(implicit ordering: Ordering[A]) extends Tre
         join(t, t.mkNode(this, r1, l2))
   }
 
-  def del(t: T, k: A): TreapNode[A, B] = {
+  def del(t: T, k: A): Node = {
     val (l, m, r) = split(t, k)
     l.join(t, r)
+  }
+
+  override def delSubTree(t: T, k: A): Node = {
+    val c = t.compare(k, key)
+    if(c==0) {
+      TreapEmptyNode()
+    } else if (c<=0) {
+      new TreapMemNode[A, B](key, value(t), left(t).delSubTree(t, k), right(t))
+    } else {
+      new TreapMemNode[A,B](key, value(t), left(t), right(t).delSubTree(t, k))
+    }
   }
 }
 
