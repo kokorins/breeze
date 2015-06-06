@@ -1,7 +1,15 @@
 package breeze.collection.immutable
 
+import breeze.stats.quantile
+
 // Ordered immutable multimap
 class CartesianTree[Value,Key](val root:Option[CartesianNode[Value, Key]])(implicit key:(Value=>Key), keyOrd:(Ordering[Key]), priority:Ordering[Value]) {
+  def merge(that: Tree):Tree = {
+    that.root.fold(this) { thatRoot =>
+      add(thatRoot.v).merge(that.delete(thatRoot.v))
+    }
+  }
+
   type NonEmptyNode = CartesianNode[Value, Key]
   type Node = Option[CartesianNode[Value, Key]]
   type Tree = CartesianTree[Value, Key]
