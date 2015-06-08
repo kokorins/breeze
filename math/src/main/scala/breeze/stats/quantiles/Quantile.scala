@@ -1,4 +1,4 @@
-package breeze.stats.quantile
+package breeze.stats.quantiles
 
 import scala.util.Try
 

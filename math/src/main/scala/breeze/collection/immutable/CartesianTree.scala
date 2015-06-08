@@ -1,15 +1,9 @@
 package breeze.collection.immutable
 
-import breeze.stats.quantile
+import breeze.stats.quantiles
 
 // Ordered immutable multimap
 class CartesianTree[Value,Key](val root:Option[CartesianNode[Value, Key]])(implicit key:(Value=>Key), keyOrd:(Ordering[Key]), priority:Ordering[Value]) {
-  def merge(that: Tree):Tree = {
-    that.root.fold(this) { thatRoot =>
-      add(thatRoot.v).merge(that.delete(thatRoot.v))
-    }
-  }
-
   type NonEmptyNode = CartesianNode[Value, Key]
   type Node = Option[CartesianNode[Value, Key]]
   type Tree = CartesianTree[Value, Key]
@@ -33,6 +27,13 @@ class CartesianTree[Value,Key](val root:Option[CartesianNode[Value, Key]])(impli
 object CartesianTree {
   def apply[Value, Key]()(implicit key:(Value=>Key), keyOrd:Ordering[Key], priority:Ordering[Value]) = new CartesianTree[Value, Key](None)
   def apply[Value, Key](root: Option[CartesianNode[Value, Key]])(implicit key:(Value=>Key), keyOrd:Ordering[Key], priority:Ordering[Value]) = new CartesianTree[Value, Key](root)
+  def Merge[Value, Key](lhs: CartesianTree[Value, Key], rhs:CartesianTree[Value, Key]):CartesianTree[Value, Key] = {
+    rhs.root match {
+      case None => lhs
+      case Some(rhsRoot) => Merge(lhs.add(rhsRoot.v), rhs.delete(rhsRoot.v))
+    }
+  }
+
 }
 
 class CartesianNode[Value, Key](val v:Value, val lhs:Option[CartesianNode[Value, Key]], val rhs:Option[CartesianNode[Value, Key]])(implicit key:(Value=>Key), keyOrd:(Key=>Ordered[Key]), priority:Ordering[Value]) {

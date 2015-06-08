@@ -1,4 +1,4 @@
-package breeze.stats.quantile
+package breeze.stats.quantiles
 
 import breeze.collection.immutable.{CartesianIterator, CartesianTree}
 
@@ -14,11 +14,13 @@ class QuantileTree[S](precision: Double, val treap: CartesianTree[QuantileNode[S
     override def compare(x: QuantileNode[S], y: QuantileNode[S]): Int = Ordering[Long].compare(x.g+x.delta, y.g+y.delta)
   }
 
-  def this(precision:Double, minL:S, maxL:S)(implicit key:(QuantileNode[S]=>S), keyOrd: Ordering[S], priority:Ordering[QuantileNode[S]]) = this(precision, CartesianTree[QuantileNode[S], S](), minL, maxL)
+  def this(precision:Double, minL:S, maxL:S)(implicit keyOrd: Ordering[S]) = {
+    this(precision, CartesianTree[QuantileNode[S], S]()(key = {k=>k.value}, keyOrd = keyOrd, priority=Ordering.by(v=>v.g+v.delta)), minL, maxL)
+  }
 
   def merge(quantileTree: QuantileTree[S]) = {
-    val t = treap.merge(quantileTree.treap)
-    new QuantileTree[S](precision, t)
+    val t = CartesianTree.Merge(treap, quantileTree.treap)
+    new QuantileTree[S](precision, t, t.min().fold(min){_.node.v.value}, t.max().fold(max){_.node.v.value})
   }
 
   def quantile(x: Double): Try[S] = {
