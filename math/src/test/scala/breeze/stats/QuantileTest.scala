@@ -1,7 +1,8 @@
 package breeze.stats
 
-import breeze.linalg.DenseVector
-import breeze.stats.quantiles.{QuantileImpl, QuantileNode, QuantileSmImpl, QuantileTree}
+import breeze.collection.immutable.CartesianTree
+import breeze.stats.quantiles.{QuantileNode, QuantileTree}
+import breeze.stats.quantiles.quantile.{QuantileImpl, QuantileSmImpl}
 import org.junit.runner.RunWith
 import org.scalacheck._
 import org.scalatest._
@@ -16,7 +17,7 @@ class quantileTest extends FunSuite with Checkers {
     check( {
       val xs = List[Double](-8.213141730905142E307, -1.0)
       val qSm = new QuantileSmImpl[Double](xs)
-      val q = xs.foldLeft(new QuantileImpl[Double](new QuantileTree(1e-3, 0.0, 0.0))){ (q, x)=>
+      val q = xs.foldLeft(new QuantileImpl[Double](new QuantileTree(1e-3, 0.0, 0.0)({q:QuantileNode[Double]=>q.value},Ordering[Double], Ordering.by{q:QuantileNode[Double]=>q.g+q.delta}))){ (q, x)=>
         q.add(x)
       }
       Math.abs(qSm.quant(0.5).getOrElse(0.0) - q.quant(0.5).getOrElse(0.0))<1e-2
@@ -27,7 +28,7 @@ class quantileTest extends FunSuite with Checkers {
     check(Prop.forAll({ xs:List[Double] => {
       val xss = xs.take(Math.min(xs.size,1000))
       val qSm = new QuantileSmImpl[Double](xss)
-      val q = xss.foldLeft(new QuantileImpl[Double](new QuantileTree(1e-3, 0.0, 0.0))){ (q, x)=>
+      val q = xss.foldLeft(new QuantileImpl[Double](new QuantileTree(1e-3, 0.0, 0.0)({q:QuantileNode[Double]=>q.value},Ordering[Double], Ordering.by{q:QuantileNode[Double]=>q.g+q.delta}))){ (q, x)=>
         q.add(x)
       }
       Math.abs(qSm.quant(0.5).getOrElse(0.0) - q.quant(0.5).getOrElse(0.0))<1e-2
@@ -50,10 +51,5 @@ class quantileTest extends FunSuite with Checkers {
           Ordering[Double].compare(exp.get, q.get) == 0
         }
     })
-  }
-
-  test("Universal function interface") {
-    val q = quantile(DenseVector(1.0, 2.0, 3.0))
-    q.quant(0.5) map(v=> Math.abs(2-v)<1e-3)
   }
 }
