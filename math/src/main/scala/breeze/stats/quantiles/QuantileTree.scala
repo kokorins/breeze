@@ -14,7 +14,7 @@ class QuantileTree[S](precision: Double, val treap: CartesianTree[QuantileNode[S
     override def compare(x: QuantileNode[S], y: QuantileNode[S]): Int = Ordering[Long].compare(x.g+x.delta, y.g+y.delta)
   }
 
-  def this(precision:Double, minL:S, maxL:S)(implicit key:(QuantileNode[S]=>S), keyOrd: Ordering[S], priority:Ordering[QuantileNode[S]]) = this(precision, CartesianTree[QuantileNode[S], S](), minL, maxL)
+  def this(precision:Double, minL:S, maxL:S)(implicit keyOrd: Ordering[S]) = this(precision, CartesianTree[QuantileNode[S], S]()({q:QuantileNode[S]=>q.value}, keyOrd, Ordering.by(q=>q.g+q.delta)), minL, maxL)
 
   def merge(quantileTree: QuantileTree[S]) = {
     val t = treap.merge(quantileTree.treap)

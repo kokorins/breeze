@@ -8,6 +8,13 @@ class CartesianTree[Value,Key](val root:Option[CartesianNode[Value, Key]])(impli
   type Node = Option[CartesianNode[Value, Key]]
   type Tree = CartesianTree[Value, Key]
 
+  def merge(that:CartesianTree[Value, Key]):CartesianTree[Value, Key] = {
+    that.root match {
+      case None => this
+      case Some(rhsRoot) => add(rhsRoot.v) merge that.delete(rhsRoot.v)
+    }
+  }
+
   def min() = CartesianIterator(root map {r=>r.min()})
   def max() = CartesianIterator(root map {r=>r.max()})
   def split(k: Key):(Tree, Tree, Tree) =
@@ -27,13 +34,6 @@ class CartesianTree[Value,Key](val root:Option[CartesianNode[Value, Key]])(impli
 object CartesianTree {
   def apply[Value, Key]()(implicit key:(Value=>Key), keyOrd:Ordering[Key], priority:Ordering[Value]) = new CartesianTree[Value, Key](None)
   def apply[Value, Key](root: Option[CartesianNode[Value, Key]])(implicit key:(Value=>Key), keyOrd:Ordering[Key], priority:Ordering[Value]) = new CartesianTree[Value, Key](root)
-  def Merge[Value, Key](lhs: CartesianTree[Value, Key], rhs:CartesianTree[Value, Key]):CartesianTree[Value, Key] = {
-    rhs.root match {
-      case None => lhs
-      case Some(rhsRoot) => Merge(lhs.add(rhsRoot.v), rhs.delete(rhsRoot.v))
-    }
-  }
-
 }
 
 class CartesianNode[Value, Key](val v:Value, val lhs:Option[CartesianNode[Value, Key]], val rhs:Option[CartesianNode[Value, Key]])(implicit key:(Value=>Key), keyOrd:(Key=>Ordered[Key]), priority:Ordering[Value]) {
